@@ -38,8 +38,8 @@ ament_target_dependencies(pcl_forwarder ${dependencies})
 add_executable(planes src/planes.cpp)
 ament_target_dependencies(planes ${dependencies})
 
-# add_executable(cylinder_segmentation src/cylinder_segmentation.cpp)
-# ament_target_dependencies(cylinder_segmentation ${dependencies})
+add_executable(cylinder_segmentation src/cylinder_segmentation.cpp)
+ament_target_dependencies(cylinder_segmentation ${dependencies})
 
 
 target_link_libraries(pcl_forwarder
@@ -52,15 +52,15 @@ target_link_libraries(planes
   ${PCL_LIBRARIES}
 )
 
-# target_link_libraries(cylinder_segmentation
-#   ${Boost_SYSTEM_LIBRARY}
-#   ${PCL_LIBRARIES}
-# )
+target_link_libraries(cylinder_segmentation
+  ${Boost_SYSTEM_LIBRARY}
+  ${PCL_LIBRARIES}
+)
 
 install(TARGETS
   pcl_forwarder
   planes
-#   cylinder_segmentation
+  cylinder_segmentation
   DESTINATION lib/${PROJECT_NAME}
 )
 
