@@ -49,6 +49,7 @@ class RingDetector(Node):
         cv2.namedWindow("Binary Image", cv2.WINDOW_NORMAL)
         cv2.namedWindow("Detected contours", cv2.WINDOW_NORMAL)
         cv2.namedWindow("Detected rings", cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Depth window", cv2.WINDOW_NORMAL)        
 
     def image_callback(self, data):
         self.get_logger().info(f"I got a new image! Will try to find rings...")
@@ -62,14 +63,14 @@ class RingDetector(Node):
         green = cv_image[:,:,1]
         red = cv_image[:,:,2]
 
-        # Tranform image to gayscale
+        # Tranform image to grayscale
         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
         # gray = red
 
         # Apply Gaussian Blur
         # gray = cv2.GaussianBlur(gray,(3,3),0)
 
-        # Do histogram equlization
+        # Do histogram equalization
         # gray = cv2.equalizeHist(gray)
 
         # Binarize the image, there are different ways to do it
@@ -82,7 +83,7 @@ class RingDetector(Node):
         # Extract contours
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Example how to draw the contours, only for visualization purposes
+        # Example of how to draw the contours, only for visualization purposes
         cv2.drawContours(gray, contours, -1, (255, 0, 0), 3)
         cv2.imshow("Detected contours", gray)
         cv2.waitKey(1)
@@ -183,7 +184,7 @@ class RingDetector(Node):
         
         # Do the necessairy conversion so we can visuzalize it in OpenCV
         image_1 = depth_image / 65536.0 * 255
-        image_1 =image_1/np.max(image_1)*255
+        image_1 = image_1/np.max(image_1)*255
 
         image_viz = np.array(image_1, dtype= np.uint8)
 
