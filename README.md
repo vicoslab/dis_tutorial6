@@ -1,6 +1,6 @@
 # Tutorial 6: Point Cloud Library and ring detection
 
-#### Development of Inteligent Systems, 2024
+#### Development of Intelligent Systems, 2024
 
 This exercise will show a few examples of how to use the [Point Cloud Library (PCL)](https://pointclouds.org/) and OpenCV to extract information from the RGBD camera. The PCL project contains a large number of [tutorials](https://pcl.readthedocs.io/projects/tutorials/en/master/) demonstrating how to use the library. From the code in this tutorial you can extrapolate how to use the PCL library in ROS2. For our purposes, the tutorials on PointCloud [segmentation](https://pcl.readthedocs.io/projects/tutorials/en/master/#segmentation) are the most relevant. The given examples use the RANSAC algorithm to find planes and cylinders, and extract the inliers. 
 
@@ -161,13 +161,13 @@ if angle_diff>4:
     continue
 ```
 
-And we can think of other filters, like the width of the ring should be appximately the same along the major and minor axis of the ellipses, the width of the ring should be smaller than the minor axis of the inner ellipse and so on.
+And we can think of other filters, like the width of the ring should be approximately the same along the major and minor axis of the ellipses, the width of the ring should be smaller than the minor axis of the inner ellipse and so on.
 
 ## TODO for students:
 As part of Task 2, you need to find all the cylinders, 3D rings, and parking spaces (2D) rings in the image. The code in this exercise will NOT perform this tasks out of the box. You should either develop a completely new approach, or use this code as a starting point.
 
 ### For cylinder detection
-In addition to the point cloud data, you also have the RGB image, the depth image, and the laser scan which you can use to detect the cylinders. The cylinders have color which is very different from the background. The cylinders have a specific size. When looking at the laser scan, the cylinders look like (incomplete) perfect circles. You should use some or all of these properties to robustly detect the cylinders. Furthermore, the `cylinder_segmentation.cpp` node can be optimized significantly to reject false detections (filter out more points, the number of inliers should be above some treshold, the fitted cylinder should be of a certain size, and should be oriented in a certain way).
+In addition to the point cloud data, you also have the RGB image, the depth image, and the laser scan which you can use to detect the cylinders. The cylinders have color which is very different from the background. The cylinders have a specific size. When looking at the laser scan, the cylinders look like (incomplete) perfect circles. You should use some or all of these properties to robustly detect the cylinders. Furthermore, the `cylinder_segmentation.cpp` node can be optimized significantly to reject false detections (filter out more points, the number of inliers should be above some threshold, the fitted cylinder should be of a certain size, and should be oriented in a certain way).
 
 ### For ring detection
 There are two types of rings that should be detected, 3D and 2D. There are, again, many different approaches that you can take. You can choose to further robustify the given approach, by improving the image preprocessing and improving the rejection of false detections. You can also exploit the color information in the image (maybe color segmentation can work?). For the 3D rings, there should be a hole in the inside ellipse, which can be verified from the point cloud or the depth image. The 3D rings are also higher, always above the central point in the image. The 2D rings are on the ground, always below the central point of the image. Have fun!
