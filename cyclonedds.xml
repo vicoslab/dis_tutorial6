@@ -1,0 +1,10 @@
+<CycloneDDS>
+   <Domain>
+     <General>
+        <Interfaces>
+          <NetworkInterface autodetermine="true" />
+        </Interfaces>
+        <DontRoute>true</DontRoute>
+    </General>
+   </Domain>
+</CycloneDDS>

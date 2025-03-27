@@ -1,173 +1,144 @@
-# Tutorial 6: Point Cloud Library and ring detection
+# Tutorial 5: The Real Turtlebot 4
 
-#### Development of Intelligent Systems, 2024
+#### Development of Intelligent Systems, 2025
 
-This exercise will show a few examples of how to use the [Point Cloud Library (PCL)](https://pointclouds.org/) and OpenCV to extract information from the RGBD camera. The PCL project contains a large number of [tutorials](https://pcl.readthedocs.io/projects/tutorials/en/master/) demonstrating how to use the library. From the code in this tutorial you can extrapolate how to use the PCL library in ROS2. For our purposes, the tutorials on PointCloud [segmentation](https://pcl.readthedocs.io/projects/tutorials/en/master/#segmentation) are the most relevant. The given examples use the RANSAC algorithm to find planes and cylinders, and extract the inliers. 
+![robots](figs/robots.png)
+*The Company of iRobot*
 
-## Plane segmentation
+### Robot Status
 
-For many different tasks, segmenting the ground plane, or finding other dominant planes in a point cloud is important. This is implemented in the `planes.cpp` node. After building the package, you can run it with:
-```
-ros2 run dis_tutorial6 planes
-```
+The Create3 base comes with a built-in LED ring around the main power button, which indicates the robot state. The other two buttons around it are unassigned by default and can be used for custom actions.
 
-## Cylinder segmentation
-Please note that the given node fits a cylinder to every pointcloud it recieves. It should be used to find the accurate position of a cylinder, but it is not reliable as a cylinder detector. It can be used, but you need to filter out the false detections.
+| State Description | Robot LED State |
+|------|-------|
+| The Create3 is powered off, the Pi 4 power supply has been cut. In this state the robot can only be activated by placing it back on the dock. | ![off](figs/off.png) |
+| The battery is charging, the robot is on the dock. | ![charging](figs/charging.png) |
+| Normal operating state | ![normal](figs/normal.png) |
+| Emergency stop (ESTOP) has been triggered, either due to hitting a bumper/IR/cliff switch or because there's no communication with the Pi 4. It can be reset by pressing the power button once, or through ROS | ![estop](figs/estop.png) |
+| Battery is low, if you don't recharge the robot soon it will automatically power off. Place the robot back on the dock and power off the Pi 4 so it can recharge faster. | ![lowbattery](figs/lowbattery.png) |
 
-First we transform the ROS2 message to a PCL pointcloud, and then to a type appropriate for processing:
-```
-// convert ROS msg to PointCloud2
-pcl_conversions::toPCL(*msg, *pcl_pc);
+## Turning off the robot when you are done working with it
+The Turtlebot 4 consists of two DDS connected machines, the Pi 4 and the Create3 which are internally connected via USB-C. Both must be powered on for the robot to work properly.
 
-// convert PointCloud2 to templated PointCloud
-pcl::fromPCLPointCloud2(*pcl_pc, *cloud);
-```
+![control](figs/control.png)
+*Image source: [Clearpath Robotics](https://turtlebot.github.io/turtlebot4-user-manual/mechanical/turtlebot4.html#removing-the-pcba)*
 
-Keep only the points that have the x-dimension (view in front of the camera) between 0 and 10.
-```
-// Build a passthrough filter to remove spurious NaNs
-pass.setInputCloud(cloud);
-pass.setFilterFieldName("x");
-pass.setFilterLimits(0, 10);
-pass.filter(*cloud_filtered);
-```
+To keep robots charged and ready for use, follow these steps when you finish work:
+- Place the robot on the charging dock (green LED on the dock should turn on).
+- If the robot was completely powered off before, wait until the chime sound
+- Hold the Pi Shutdown button for a few seconds (the lidar should stop spinning).
 
-Then, we calculate normals to the points. For each point we take a look at its neighbours and estimate the normal to the surface. This is one of many possible approaches to do this. In this way, we can also create a 3d mesh from 3d points:
-```
-// Estimate point normals
-ne.setSearchMethod(tree);
-ne.setInputCloud(cloud_filtered);
-ne.setKSearch(50);
-ne.compute(*cloud_normals);
-```
+![poweroff](figs/poweroff.png)
 
-We find the largest plane in the point cloud. This will usually be the ground plane. It will be simpler for RANSAC to find a good fit for the cylinder if we filter out all the points we are certain do not belong to the cylinder:
-```
-// Create the segmentation object for the planar model and set all the
-// parameters
-seg.setOptimizeCoefficients(true);
-seg.setModelType(pcl::SACMODEL_NORMAL_PLANE);
-seg.setNormalDistanceWeight(0.1);
-seg.setMethodType(pcl::SAC_RANSAC);
-seg.setMaxIterations(100);
-seg.setDistanceThreshold(0.03);
-seg.setInputCloud(cloud_filtered);
-seg.setInputNormals(cloud_normals);
+## STEP 1 - Turning on/restarting the robot 
 
-seg.segment(*inliers_plane, *coefficients_plane);
-```
+To resume work with the robot:
+- Remove the robot from the dock.
+- Hold the Create3 power button for 10 seconds so the base powers down.
+- Place the robot back on the dock for both computers to boot in sync.
+- Wait for the beep (it may take a minute or two).
 
-Remove all the points that belong to the plane from the point cloud:
-```
-// Extract the planar inliers from the input cloud
-extract.setInputCloud(cloud_filtered);
-extract.setIndices(inliers_plane);
-extract.setNegative(false);
-extract.filter(*cloud_plane);
-```
+> Note that the Create3 cannot be turned off while on the charging station, and the only way to turn it on when it's powered off is to place it on the dock. If the power is cut to the Pi 4 by turning off the Create3 before executing safe shutdown, it might corrupt the SD card.
 
-Finally, run RANSAC and fit a cylinder model to the rest of the points:
-```
-// Create the segmentation object for cylinder segmentation and set all the
-// parameters
-seg.setOptimizeCoefficients(true);
-seg.setModelType(pcl::SACMODEL_CYLINDER);
-seg.setMethodType(pcl::SAC_RANSAC);
-seg.setNormalDistanceWeight(0.1);
-seg.setMaxIterations(100);
-seg.setDistanceThreshold(0.05);
-seg.setRadiusLimits(0.06, 0.2);
-seg.setInputCloud(cloud_filtered2);
-seg.setInputNormals(cloud_normals2);
-
-// Obtain the cylinder inliers and coefficients
-seg.segment(*inliers_cylinder, *coefficients_cylinder);
-```
-
-In the end, extract the points that belong to the cylinder and computer their centroid:
-```
-// extract cylinder
-extract.setInputCloud(cloud_filtered2);
-extract.setIndices(inliers_cylinder);
-extract.setNegative(false);
-pcl::PointCloud<PointT>::Ptr cloud_cylinder(new pcl::PointCloud<PointT>());
-extract.filter(*cloud_cylinder);
-
-// calculate marker
-pcl::compute3DCentroid(*cloud_cylinder, centroid);
-```
-
-## Ring detection
-The given code is a demo of how to extract planar rings from the image. This is one of the simplest possible approaches, for demonstration purposes. You are highly encouraged to develop your own approach. The given code is explained below, which you should at least customize to improve its performance:
+If the buttons on the display do not respond or the display is off, it means that the Pi 4 is powered off, unless the lidar is spinning, in which case the ROS 2 nodes that handle the screen may not be running or the boot process hasn't finished yet.
 
 
-First, convert the image to numpy form:
+## STEP 2 - Connecting to the robot from your workstation
+
+Your computer should be connected to the same network as the robot (e.g. for the robot `Kili`, connect to `KiliWifi` or `KiliWifi_5GHz`).
+
+After it is connected, you need to adjust the ROS_DOMAIN_ID to match the one written on the robot, and switch `RMW_IMPLEMENTATION` to `rmw_cyclonedds_cpp`.
+
+The Cyclone middleware requires [an xml config](cyclonedds.xml), specified as the `CYCLONEDDS_URI` envrionment variable. For more info about the cyclone config, [see here](https://iroboteducation.github.io/create3_docs/setup/xml-config/), you might need to specify the network interface explicitly if using multiple ones e.g. `<NetworkInterface name="wlan0" />`.
+
+![domain](figs/domain.png)
+*The sticker with the ROS_DOMAIN_ID, different for each robot
+
+![oled](figs/oled.png)
+*OLED display: The first line shows the IP address. Buttons 3 and 4 select the action, button 1 confirms it, button 2 scrolls back to top. The top bar shows battery level and IP address*
+
+
+Make sure your `.bashrc` looks as follows:
 ```
-cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+export CYCLONEDDS_URI='/home/<your_user_name>/cyclonedds.xml'
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
-Convert it to a grayscale image:
+ 
+Then, source .bashrc, or re-open any terminals so the new `.bashrc` is properly sourced. 
+
+Optionally, restart the `ros2 daemon` just to be sure:
 ```
-gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+ros2 daemon stop; ros2 daemon start
 ```
 
-Optionally, apply Gaussian blur. This is done to decrease the effects of image noise and small changes in pixel intensities:
-```
-gray = cv2.GaussianBlur(gray,(3,3),0)
-```
+This should be it!
 
-Optionally, apply histogram equalization. This is done to improve the contrast of the image:
-```
-gray = cv2.equalizeHist(gray)
-```
+----------------
 
-Apply thresholding to get a binary image. There are different possible apporoaches: global, Otsu, adaptive:
-```
-#ret, thresh = cv2.threshold(img, 50, 255, 0)
-#ret, thresh = cv2.threshold(img, 70, 255, cv2.THRESH_BINARY)
-thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, 30)
-```
+#### Check 1
 
-Extract contours from the edges in the binary image:
-```
-contours, hierarchy = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-```
+To check if the robot is properly connected you can inspect topics with:
 
-Then, we fit ellipses to all contours that are longer than some threshold (20):
-```
-elps = []
-for cnt in contours:
-    #     print cnt
-    #     print cnt.shape
-    if cnt.shape[0] >= 20:
-        ellipse = cv2.fitEllipse(cnt)
-        elps.append(ellipse)
-```
+    ros2 topic list
 
-We then evaluate all pairs of ellipses and try to eliminate all that do not form a ring. OpenCV returns ellipses as oriented bounding boxes. Each ellipse is represented as the coordinates of its the center point `e[0]`, the length of the minor and major axis `e[1]` and its rotation `e[2]`. The ellipses that represent the inner and outer circles of a ring have some similar properties. First, their centers should be roughly the same: 
-```
-e1 = elps[n]
-e2 = elps[m]
-dist = np.sqrt(((e1[0][0] - e2[0][0]) ** 2 + (e1[0][1] - e2[0][1]) ** 2))
+You should see a lot of topics. If not, recheck:
+- that the robot is charged and powered on
+- your network settings
+- your DDS config (`echo $RMW_IMPLEMENTATION`)
+- your domain config (`echo $ROS_DOMAIN_ID`)
 
-# The centers of the two elipses should be within 5 pixels of each other
-if dist >= 5:
-    continue
-```
+#### Check 2
 
-Their rotation in the image should be approximately the same:
-```
-angle_diff = np.abs(e1[2] - e2[2])
-if angle_diff>4:
-    continue
-```
+See if you are receiving the `/odom` topic:
 
-And we can think of other filters, like the width of the ring should be approximately the same along the major and minor axis of the ellipses, the width of the ring should be smaller than the minor axis of the inner ellipse and so on.
+    ros2 topic echo /odom
 
-## TODO for students:
-As part of Task 2, you need to find all the cylinders, 3D rings, and parking spaces (2D) rings in the image. The code in this exercise will NOT perform this tasks out of the box. You should either develop a completely new approach, or use this code as a starting point.
+You should see a stream of data. If not, the Create3 base has not yet booted, wait for the chime sound.
 
-### For cylinder detection
-In addition to the point cloud data, you also have the RGB image, the depth image, and the laser scan which you can use to detect the cylinders. The cylinders have color which is very different from the background. The cylinders have a specific size. When looking at the laser scan, the cylinders look like (incomplete) perfect circles. You should use some or all of these properties to robustly detect the cylinders. Furthermore, the `cylinder_segmentation.cpp` node can be optimized significantly to reject false detections (filter out more points, the number of inliers should be above some threshold, the fitted cylinder should be of a certain size, and should be oriented in a certain way).
+#### Check 3
 
-### For ring detection
-There are two types of rings that should be detected, 3D and 2D. There are, again, many different approaches that you can take. You can choose to further robustify the given approach, by improving the image preprocessing and improving the rejection of false detections. You can also exploit the color information in the image (maybe color segmentation can work?). For the 3D rings, there should be a hole in the inside ellipse, which can be verified from the point cloud or the depth image. The 3D rings are also higher, always above the central point in the image. The 2D rings are on the ground, always below the central point of the image. Have fun!
+See if you can move the robot with keyboard teleoperation:
+
+    ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+You should be able to move the robot.
+
+If you have passed all the checks, you can move on with building a map and navigating the robot.
+
+## Building a map
+
+The procedure for building a map is a little simpler than when using the simulation, we only need to start the SLAM and the keyboard teleoperation. 
+
+Please follow the [official map making tutorial](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/generate_map.html).
+
+## Navigating a map
+
+Once you have save a map, we can have the robot navigate around the map. 
+
+Check the [official navigation tutorial](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/navigation.html).
+
+## Transform frames
+
+![tf_rviz](figs/tf_rviz.png)
+
+The transform system in ROS 2 is a standardized way to define and handle coordinate frames and transforms between them. It consists of two topics: `/tf` and `/tf_static`, as well as a collection of libraries for python and C++.
+
+Every robot is defined by a collection of coordinate frames, with `base_link` being considered the parent frame for the current robot. Other common frames include:
+
+- `base_footprint` - typically below base link, where the robot meets the ground
+- `odom` - the transformation between the location where the robot started and where it is now, based on wheel encoder data
+- `map` - the correction for odometry drift, usually calculated based on external landmarks
+- `world` or `earth` - localizes one or multiple robots on the world WGS84 system based on GNSS or other global data
+- sensor frames like `camera`, `imu`, `laser`, `sonar`, etc. which reflect the position and rotation of sensors mounted on the real robot, so their data can be accurately transformed into other frames
+
+When multiple robots are in the same TF graph, the conventional way to separate them is using namespacing, i.e. prepending a robot name to the frames. that way `/robot1/base_link` can be distinct from `/robot2/base_link` while using the same conventions or even be built from the same URDF file.
+
+You can use the following command to collect and view currently available frames:
+
+    ros2 run tf2_tools view_frames
+
+If you're running the turtlebot simulator, the generated PDF should look something similar as the excerpt below, a full graph of all connected frames:
+
+![tf_frames](figs/tf_frames.png)
+
+Check the [official documentation page](https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Introduction-To-Tf2.html) for more info.
