@@ -1,4 +1,4 @@
-# Tutorial 5: The Real Turtlebot 4
+# Tutorial 6: The Real Turtlebot 4
 
 #### Development of Intelligent Systems, 2025
 
@@ -17,54 +17,71 @@ The Create3 base comes with a built-in LED ring around the main power button, wh
 | Emergency stop (ESTOP) has been triggered, either due to hitting a bumper/IR/cliff switch or because there's no communication with the Pi 4. It can be reset by pressing the power button once, or through ROS | ![estop](figs/estop.png) |
 | Battery is low, if you don't recharge the robot soon it will automatically power off. Place the robot back on the dock and power off the Pi 4 so it can recharge faster. | ![lowbattery](figs/lowbattery.png) |
 
-## Turning off the robot when you are done working with it
 The Turtlebot 4 consists of two DDS connected machines, the Pi 4 and the Create3 which are internally connected via USB-C. Both must be powered on for the robot to work properly.
 
 ![control](figs/control.png)
 *Image source: [Clearpath Robotics](https://turtlebot.github.io/turtlebot4-user-manual/mechanical/turtlebot4.html#removing-the-pcba)*
 
-To keep robots charged and ready for use, follow these steps when you finish work:
-- Place the robot on the charging dock (green LED on the dock should turn on).
-- If the robot was completely powered off before, wait until the chime sound
-- Hold the Pi Shutdown button for a few seconds (the lidar should stop spinning).
+## STEP 1 - Turning on/restarting the robot 
+
+> The Create3 cannot be turned off while on the charging station, and the only way to turn it on when it's powered off is to place it on the dock. If the power is cut to the Pi 4 by turning off the Create3 before executing safe shutdown, it might corrupt the SD card. Always power off the Pi 4 first, before cutting power from the Create3.
+
+If the robot is powered off (lidar not spinning, LED ring is off):
+- place the robot on the dock so both computers boot in sync
+- wait for the beep (it may take a minute or two)
+
+If the robot is already on the dock (lidar not spinning, LED ring is on):
+- remove the robot from the dock
+- hold the Create3 power button for 10 seconds so the base powers down
+- follow instructions for powering on
+
+If the robot is running but not responsive (lidar is spinning, LED ring is on):
+- remove the robot from the dock
+- hold the Pi Shutdown button for a few seconds (the lidar should stop spinning)
+- hold the Create3 power button for 10 seconds so the base powers down
+- follow instructions for powering on
 
 ![poweroff](figs/poweroff.png)
 
-## STEP 1 - Turning on/restarting the robot 
-
-To resume work with the robot:
-- Remove the robot from the dock.
-- Hold the Create3 power button for 10 seconds so the base powers down.
-- Place the robot back on the dock for both computers to boot in sync.
-- Wait for the beep (it may take a minute or two).
-
-> Note that the Create3 cannot be turned off while on the charging station, and the only way to turn it on when it's powered off is to place it on the dock. If the power is cut to the Pi 4 by turning off the Create3 before executing safe shutdown, it might corrupt the SD card.
-
 If the buttons on the display do not respond or the display is off, it means that the Pi 4 is powered off, unless the lidar is spinning, in which case the ROS 2 nodes that handle the screen may not be running or the boot process hasn't finished yet.
-
-
-## STEP 2 - Connecting to the robot from your workstation
-
-Your computer should be connected to the same network as the robot (e.g. for the robot `Kili`, connect to `KiliWifi` or `KiliWifi_5GHz`).
-
-After it is connected, you need to adjust the ROS_DOMAIN_ID to match the one written on the robot, and switch `RMW_IMPLEMENTATION` to `rmw_cyclonedds_cpp`.
-
-The Cyclone middleware requires [an xml config](cyclonedds.xml), specified as the `CYCLONEDDS_URI` envrionment variable. For more info about the cyclone config, [see here](https://iroboteducation.github.io/create3_docs/setup/xml-config/), you might need to specify the network interface explicitly if using multiple ones e.g. `<NetworkInterface name="wlan0" />`.
-
-![domain](figs/domain.png)
-*The sticker with the ROS_DOMAIN_ID, different for each robot
 
 ![oled](figs/oled.png)
 *OLED display: The first line shows the IP address. Buttons 3 and 4 select the action, button 1 confirms it, button 2 scrolls back to top. The top bar shows battery level and IP address*
 
 
-Make sure your `.bashrc` looks as follows:
+⚠️ To keep robots charged and ready for use, follow these steps when you finish work:
+- place the robot on the charging dock (green LED on the dock should turn on)
+- if the robot was completely powered off before, wait until the chime sound
+- hold the Pi Shutdown button for a few seconds (the lidar should stop spinning)
+
+If the Pi remains powered on, the robot will charge extremely slowly, so it's essential to turn it off for faster charging.
+
+## STEP 2 - Connecting to the robot from your workstation
+
+As the robot turns on, it will connect to its dedicated colour-coded router and network. Robots are split over multiple routers on different channels for more concurrent bandwidth.
+
+If you are using your own laptop, first connect to the same network as the robot (e.g. for the robot `Kili`, connect to `KiliWifi` or `KiliWifi_5GHz`).
+
+Lab workstations are already connected to one of the robot routers via Ethernet, and should be used with the corresponding robot.
+
+![pc](https://github.com/user-attachments/assets/67fe1698-475b-4ff2-ae51-f647a1782ed5)
+*The router to which the Gloin Turtlebot connects to, and the workstation that can be used with it*
+
+Next, you need to adjust your environment variables in the `~/.bashrc` file. The `ROS_DOMAIN_ID` should match the one written on the robot, and `RMW_IMPLEMENTATION` needs to be set to `rmw_cyclonedds_cpp`.
+
+![domain](figs/domain.png)
+*The sticker with the `ROS_DOMAIN_ID`, different for each robot*
+
+The Cyclone middleware requires [an xml config](cyclonedds.xml), specified as the `CYCLONEDDS_URI` envrionment variable. For more info about the cyclone config, [see here](https://iroboteducation.github.io/create3_docs/setup/xml-config/), you might need to specify the network interface explicitly if using multiple ones e.g. `<NetworkInterface name="wlan0" />`. Lab workstations already have cyclone configured, if using your own laptop, you need to download and link the provided config.
+
+Make sure your `~/.bashrc` looks as follows:
 ```
 export CYCLONEDDS_URI='/home/<your_user_name>/cyclonedds.xml'
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export ROS_DOMAIN_ID=<your_robot_domain_id>
 ```
  
-Then, source .bashrc, or re-open any terminals so the new `.bashrc` is properly sourced. 
+Then, `source ~/.bashrc`, or re-open any terminals so the new `.bashrc` is properly sourced. 
 
 Optionally, restart the `ros2 daemon` just to be sure:
 ```
