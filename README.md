@@ -1,9 +1,50 @@
+
 # Tutorial 6: The Real Turtlebot 4
 
 #### Development of Intelligent Systems, 2025
 
 ![robots](figs/robots.png)
 *The Company of iRobot*
+
+## TurtleBot4
+
+The TurtleBot4 platform consists of two main parts, the Create3 mobile base that controls the wheels, the interface buttons and docking/undocking. The other part is a Raspberry Pi 4 that runs ROS2 and oversees the LIDAR and the OAK-D camera. For simplicity, we have prepared the necessary system components upfront, so you will not need to access the onboard computers directly. When the TurtleBot turns on, the ROS2 topics required for control and reading data from sensors should automatically start, and you can access them via ROS2 from your computer if the network settings are correct.
+
+## STEP 1 - Turning on/restarting the robot 
+
+The TurtleBot can only be booted up by placing it on the charging dock. Please follow the instructions below to ensure safe operation of the robot and avoid possible issues.
+
+If the robot is powered off (lidar not spinning, LED ring is off):
+- place the robot on the dock so both computers boot in sync
+- wait for the beep (it may take a minute or two)
+
+If the robot is already on the dock but the Raspberry Pi is not turned on (lidar not spinning, LED ring is on):
+- remove the robot from the dock
+- hold the Create3 power button for 10 seconds so the base powers down
+- follow instructions for powering on
+
+If the robot is running but not responsive (lidar is spinning, LED ring is on):
+- remove the robot from the dock
+- hold the Pi Shutdown button for a few seconds (the lidar should stop spinning)
+- hold the Create3 power button for 10 seconds so the base powers down
+- follow instructions for powering on
+
+> NOTE: The Create3 cannot be turned off while on the charging station, and the only way to turn it on when it's powered off is to place it on the dock. If the power is cut to the Pi 4 by turning off the Create3 before executing safe shutdown, it might corrupt the SD card. Always power off the Pi 4 first, before cutting power from the Create3.
+
+![poweroff](figs/poweroff.png)
+
+If the buttons on the display do not respond or the display is off, it means that the Pi 4 is powered off, unless the lidar is spinning, in which case the ROS 2 nodes that handle the screen may not be running or the boot process hasn't finished yet.
+
+![oled](figs/oled.png)
+*OLED display: The first line shows the IP address. Buttons 3 and 4 select the action, button 1 confirms it, button 2 scrolls back to top. The top bar shows battery level and IP address*
+
+
+⚠️ To keep robots charged and ready for use, follow these steps when you finish work:
+- Place the robot on the charging dock (green LED on the dock should turn on).
+- If the robot was completely powered off before, wait until the chime sound.
+- Hold the Pi Shutdown button for a few seconds (the lidar should stop spinning).
+
+If the Raspberry Pi remains powered on, the robot will charge extremely slowly, so it's essential to turn it off for faster charging.
 
 ### Robot Status
 
@@ -22,39 +63,6 @@ The Turtlebot 4 consists of two DDS connected machines, the Pi 4 and the Create3
 ![control](figs/control.png)
 *Image source: [Clearpath Robotics](https://turtlebot.github.io/turtlebot4-user-manual/mechanical/turtlebot4.html#removing-the-pcba)*
 
-## STEP 1 - Turning on/restarting the robot 
-
-> The Create3 cannot be turned off while on the charging station, and the only way to turn it on when it's powered off is to place it on the dock. If the power is cut to the Pi 4 by turning off the Create3 before executing safe shutdown, it might corrupt the SD card. Always power off the Pi 4 first, before cutting power from the Create3.
-
-If the robot is powered off (lidar not spinning, LED ring is off):
-- place the robot on the dock so both computers boot in sync
-- wait for the beep (it may take a minute or two)
-
-If the robot is already on the dock (lidar not spinning, LED ring is on):
-- remove the robot from the dock
-- hold the Create3 power button for 10 seconds so the base powers down
-- follow instructions for powering on
-
-If the robot is running but not responsive (lidar is spinning, LED ring is on):
-- remove the robot from the dock
-- hold the Pi Shutdown button for a few seconds (the lidar should stop spinning)
-- hold the Create3 power button for 10 seconds so the base powers down
-- follow instructions for powering on
-
-![poweroff](figs/poweroff.png)
-
-If the buttons on the display do not respond or the display is off, it means that the Pi 4 is powered off, unless the lidar is spinning, in which case the ROS 2 nodes that handle the screen may not be running or the boot process hasn't finished yet.
-
-![oled](figs/oled.png)
-*OLED display: The first line shows the IP address. Buttons 3 and 4 select the action, button 1 confirms it, button 2 scrolls back to top. The top bar shows battery level and IP address*
-
-
-⚠️ To keep robots charged and ready for use, follow these steps when you finish work:
-- place the robot on the charging dock (green LED on the dock should turn on)
-- if the robot was completely powered off before, wait until the chime sound
-- hold the Pi Shutdown button for a few seconds (the lidar should stop spinning)
-
-If the Pi remains powered on, the robot will charge extremely slowly, so it's essential to turn it off for faster charging.
 
 ## STEP 2 - Connecting to the robot from your workstation
 
@@ -79,6 +87,7 @@ Make sure your `~/.bashrc` looks as follows:
 export CYCLONEDDS_URI='/home/<your_user_name>/cyclonedds.xml'
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export ROS_DOMAIN_ID=<your_robot_domain_id>
+export ROS_LOCALHOST_ONLY=0
 ```
  
 Then, `source ~/.bashrc`, or re-open any terminals so the new `.bashrc` is properly sourced. 
@@ -94,13 +103,14 @@ This should be it!
 
 #### Check 1
 
-To check if the robot is properly connected you can inspect topics with:
+To check if the robot is properly connected, you can inspect topics with:
 
     ros2 topic list
 
 You should see a lot of topics. If not, recheck:
 - that the robot is charged and powered on
 - your network settings
+- try pinging the Raspberry Pi (`192.168.0.<your_robot_domain_id>`)
 - your DDS config (`echo $RMW_IMPLEMENTATION`)
 - your domain config (`echo $ROS_DOMAIN_ID`)
 
@@ -110,7 +120,7 @@ See if you are receiving the `/odom` topic:
 
     ros2 topic echo /odom
 
-You should see a stream of data. If not, the Create3 base has not yet booted, wait for the chime sound.
+You should see a stream of data. If not, the Create3 base has not yet booted, wait for the chime sound. The `/odom` topic is necessary for localization and control of the robot.
 
 #### Check 3
 
@@ -130,7 +140,7 @@ Please follow the [official map making tutorial](https://turtlebot.github.io/tur
 
 ## Navigating a map
 
-Once you have save a map, we can have the robot navigate around the map. 
+Once you have saved a map, we can have the robot navigate around the map. 
 
 Check the [official navigation tutorial](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/navigation.html).
 
