@@ -66,7 +66,7 @@ The Turtlebot 4 consists of two DDS connected machines, the Pi 4 and the Create3
 
 ## STEP 2 - Connecting to the robot from your workstation
 
-As the robot turns on, it will connect to its dedicated colour-coded router and network. Robots are split over multiple routers on different channels for more concurrent bandwidth.
+As the robot turns on, it will connect to its dedicated color-coded router and network. Robots are split over multiple routers on different channels for more concurrent bandwidth.
 
 If you are using your own laptop, first connect to the same network as the robot (e.g. for the robot `Kili`, connect to `KiliWifi` or `KiliWifi_5GHz`).
 
@@ -80,7 +80,7 @@ Next, you need to adjust your environment variables in the `~/.bashrc` file. The
 ![domain](figs/domain.png)
 *The sticker with the `ROS_DOMAIN_ID`, different for each robot*
 
-The Cyclone middleware requires [an xml config](cyclonedds.xml), specified as the `CYCLONEDDS_URI` envrionment variable. For more info about the cyclone config, [see here](https://iroboteducation.github.io/create3_docs/setup/xml-config/), you might need to specify the network interface explicitly if using multiple ones e.g. `<NetworkInterface name="wlan0" />`. Lab workstations already have cyclone configured, if using your own laptop, you need to download and link the provided config.
+The Cyclone middleware requires [an xml config](cyclonedds.xml), specified as the `CYCLONEDDS_URI` environment variable. For more info about the cyclone config, [see here](https://iroboteducation.github.io/create3_docs/setup/xml-config/), you might need to specify the network interface explicitly if using multiple ones e.g. `<NetworkInterface name="wlan0" />`. Lab workstations already have cyclone configured, if using your own laptop, you need to download and link the provided config.
 
 Make sure your `~/.bashrc` looks as follows:
 ```
@@ -100,6 +100,8 @@ ros2 daemon stop; ros2 daemon start
 This should be it!
 
 ----------------
+
+To check if everything is working correctly, you can use the following checks:
 
 #### Check 1
 
@@ -132,6 +134,16 @@ You should be able to move the robot.
 
 If you have passed all the checks, you can move on with building a map and navigating the robot.
 
+#### Check 4
+
+See if the OAK-D camera is sending over the images by running:
+
+    ros2 topic echo --no-arr /oak/rgb/image_raw
+    ros2 topic hz /oak/rgb/image_raw
+    
+If you see data being published, you can then use the images in your scripts by changing the subscriber topic name.
+
+
 ## Building a map
 
 The procedure for building a map is a little simpler than when using the simulation, we only need to start the SLAM and the keyboard teleoperation. 
@@ -158,13 +170,13 @@ Every robot is defined by a collection of coordinate frames, with `base_link` be
 - `world` or `earth` - localizes one or multiple robots on the world WGS84 system based on GNSS or other global data
 - sensor frames like `camera`, `imu`, `laser`, `sonar`, etc. which reflect the position and rotation of sensors mounted on the real robot, so their data can be accurately transformed into other frames
 
-When multiple robots are in the same TF graph, the conventional way to separate them is using namespacing, i.e. prepending a robot name to the frames. that way `/robot1/base_link` can be distinct from `/robot2/base_link` while using the same conventions or even be built from the same URDF file.
+When multiple robots are in the same TF graph, the conventional way to separate them is using namespacing, i.e. prepending a robot name to the frames. That way `/robot1/base_link` can be distinct from `/robot2/base_link` while using the same conventions or even be built from the same URDF file.
 
 You can use the following command to collect and view currently available frames:
 
     ros2 run tf2_tools view_frames
 
-If you're running the turtlebot simulator, the generated PDF should look something similar as the excerpt below, a full graph of all connected frames:
+If you're running the TurtleBot simulator, the generated PDF should look something similar to the excerpt below, a full graph of all connected frames:
 
 ![tf_frames](figs/tf_frames.png)
 
