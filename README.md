@@ -1,18 +1,24 @@
 
 # Tutorial 6: The Real Turtlebot 4
 
-#### Development of Intelligent Systems, 2025
+#### Development of Intelligent Systems, 2026
 
 ![robots](figs/robots.png)
 *The Company of iRobot*
 
 ## TurtleBot4
 
-The TurtleBot4 platform consists of two main parts, the Create3 mobile base that controls the wheels, the interface buttons and docking/undocking. The other part is a Raspberry Pi 4 that runs ROS2 and oversees the LIDAR and the OAK-D camera. For simplicity, we have prepared the necessary system components upfront, so you will not need to access the onboard computers directly. When the TurtleBot turns on, the ROS2 topics required for control and reading data from sensors should automatically start, and you can access them via ROS2 from your computer if the network settings are correct.
+The TurtleBot4 platform consists of two main parts:
+- The Create3 mobile base that controls the wheels and provides odometry, reacts to bumper switches, and controls docking/undocking. 
+- The Raspberry Pi 4 + PCBA HAT that oversees the LIDAR and the stereo camera
+
+For simplicity, we have prepared the necessary system components upfront, so you will not need to access the onboard computers directly. When the TurtleBot turns on, the ROS 2 topics required for control and reading data from sensors should automatically start, and you can access them via ROS 2 from your computer if the network settings are correct.
+
+The main hardware difference between the simulated and real robot is the stereo camera, the sim uses the original Oak-D Pro, while the physical ones now use a Gemini 355L for more reliable operation and lower power consumption.
 
 ## STEP 1 - Turning on/restarting the robot 
 
-The TurtleBot can only be booted up by placing it on the charging dock. Please follow the instructions below to ensure safe operation of the robot and avoid possible issues.
+The TurtleBot can only be turned on by placing it on the charging dock. Please follow the instructions below to ensure safe operation of the robot and avoid possible issues.
 
 If the robot is powered off (lidar not spinning, LED ring is off):
 - place the robot on the dock so both computers boot in sync
@@ -58,7 +64,9 @@ The Create3 base comes with a built-in LED ring around the main power button, wh
 | Emergency stop (ESTOP) has been triggered, either due to hitting a bumper/IR/cliff switch or because there's no communication with the Pi 4. It can be reset by pressing the power button once, or through ROS | ![estop](figs/estop.png) |
 | Battery is low, if you don't recharge the robot soon it will automatically power off. Place the robot back on the dock and power off the Pi 4 so it can recharge faster. | ![lowbattery](figs/lowbattery.png) |
 
-The Turtlebot 4 consists of two DDS connected machines, the Pi 4 and the Create3 which are internally connected via USB-C. Both must be powered on for the robot to work properly.
+More info can be found [in the Create3 documentation](https://iroboteducation.github.io/create3_docs/hw/face/).
+
+The Turtlebot consists of two DDS connected machines, the Pi 4 and the Create3 which are internally connected via USB-C. Both must be powered on for the robot to work properly.
 
 ![control](figs/control.png)
 *Image source: [Clearpath Robotics](https://turtlebot.github.io/turtlebot4-user-manual/mechanical/turtlebot4.html#removing-the-pcba)*
@@ -138,15 +146,14 @@ If you have passed all the checks, you can move on with building a map and navig
 
 See if the OAK-D camera is sending over the images by running:
 
-    ros2 topic echo --no-arr /oak/rgb/image_raw
-    ros2 topic hz /oak/rgb/image_raw
+    ros2 topic echo --no-arr /gemini/color/image_raw
+    ros2 topic hz /gemini/color/image_raw
     
 If you see data being published, you can then use the images in your scripts by changing the subscriber topic name.
 
-
 ## Building a map
 
-The procedure for building a map is a little simpler than when using the simulation, we only need to start the SLAM and the keyboard teleoperation. 
+The procedure for building a map is a little simpler than when using the simulation, we only need to start the SLAM and the keyboard teleoperation.
 
 Please follow the [official map making tutorial](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/generate_map.html).
 
@@ -180,4 +187,4 @@ If you're running the TurtleBot simulator, the generated PDF should look somethi
 
 ![tf_frames](figs/tf_frames.png)
 
-Check the [official documentation page](https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Introduction-To-Tf2.html) for more info.
+Check the [official documentation page](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Tf2/Introduction-To-Tf2.html) for more info.
