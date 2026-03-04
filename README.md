@@ -144,12 +144,45 @@ If you have passed all the checks, you can move on with building a map and navig
 
 #### Check 4
 
-See if the OAK-D camera is sending over the images by running:
+See if the Gemini stereo camera is sending over the images by running:
 
-    ros2 topic echo --no-arr /gemini/color/image_raw
-    ros2 topic hz /gemini/color/image_raw
+```bash
+ros2 topic echo --no-arr /gemini/color/image_raw
+ros2 topic hz /gemini/color/image_raw
+```
     
 If you see data being published, you can then use the images in your scripts by changing the subscriber topic name.
+
+The physical robot's camera comes with different topics than the simulated Oak-D, so you'll need to adjust your launch files:
+
+```bash
+#RGB Image
+/gemini/color/camera_info
+/gemini/color/image_raw
+/gemini/color/image_raw/compressed
+/gemini/color/image_raw/theora
+
+#Depth Image
+/gemini/depth/camera_info
+/gemini/depth/image_raw
+/gemini/depth/image_raw/compressedDepth
+/gemini/depth/image_raw/theora
+
+#RGB Point Cloud
+/gemini/depth/points
+/gemini/depth_registered/points
+
+#Misc.
+/gemini/depth/metadata
+/gemini/color/metadata
+/gemini/depth_filter_status
+/gemini/device_status
+```
+
+
+#### TTS
+
+The robots also carry a speaker and run a speech-to-text node which listens to `/speak`. Publish a string message to this topic to have the robot speak your message out loud. 
 
 ## Building a map
 
