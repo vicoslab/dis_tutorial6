@@ -136,7 +136,7 @@ You should see a stream of data. If not, the Create3 base has not yet booted, wa
 
 See if you can move the robot with keyboard teleoperation:
 
-    ros2 run teleop_twist_keyboard teleop_twist_keyboard
+    ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true
 
 You should be able to move the robot.
 
